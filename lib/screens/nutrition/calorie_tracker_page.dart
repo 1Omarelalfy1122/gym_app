@@ -1,69 +1,299 @@
-// Calorie tracker page for monitoring daily intake
-// Displays calorie goals, consumption, and remaining calories
-
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui';
+import 'food_service.dart';
+import 'food_model.dart';
 
-class CalorieTrackerPage extends StatelessWidget {
+class CalorieTrackerPage extends StatefulWidget {
   const CalorieTrackerPage({super.key});
+
+  @override
+  State<CalorieTrackerPage> createState() => _CalorieTrackerPageState();
+}
+
+class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
+  final TextEditingController _searchController = TextEditingController();
+  Food? _searchResult;
+  bool _isLoading = false;
+  List<Food> _meals = [];
+  
+  Future<void> _searchFood() async {
+    if (_searchController.text.isEmpty) return;
+    
+    setState(() {
+      _isLoading = true;
+      _searchResult = null;
+    });
+    
+    final result = await FoodService.searchFood(_searchController.text);
+    
+    setState(() {
+      _searchResult = result;
+      _isLoading = false;
+    });
+  }
+
+  void _addMeal() {
+    if (_searchResult != null) {
+      setState(() {
+        _meals.add(_searchResult!);
+        _searchResult = null;
+        _searchController.clear();
+      });
+    }
+  }
+
+  Widget _buildGlassCard({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.1),
+                Colors.white.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calorie Tracker')),
-      body: Column(
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: Stack(
         children: [
-          _buildCalorieOverview(),
-          const Divider(),
-          Expanded(child: _buildMealsList()),
+          // Background gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF2C3E50), Color(0xFF1A1A1A)],
+              ),
+            ),
+          ),
+          // Purple glow
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.purple.withOpacity(0.3),
+                    Colors.purple.withOpacity(0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Calorie Tracker',
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                _buildSearchBar(),
+                if (_searchResult != null) _buildSearchResult(),
+                _buildCalorieOverview(),
+                Expanded(child: _buildMealsList()),
+              ],
+            ),
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _buildGlassCard(
+        child: TextField(
+          controller: _searchController,
+          style: GoogleFonts.karla(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Search for food...',
+            hintStyle: GoogleFonts.karla(color: Colors.white60),
+            prefixIcon: const Icon(Icons.search, color: Colors.white60),
+            suffixIcon: _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white60),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white60),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchResult = null);
+                    },
+                  ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          onSubmitted: (_) => _searchFood(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResult() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: _buildGlassCard(
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          leading: _searchResult!.imageUrl.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    _searchResult!.imageUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.fastfood, size: 40, color: Colors.white60),
+                  ),
+                )
+              : const Icon(Icons.fastfood, size: 40, color: Colors.white60),
+          title: Text(
+            _searchResult!.name,
+            style: GoogleFonts.karla(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            '${_searchResult!.calories.toStringAsFixed(0)} kcal per 100g',
+            style: GoogleFonts.karla(color: Colors.white60),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.add_circle, color: Colors.purple),
+            onPressed: _addMeal,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildCalorieOverview() {
-    return Container(
+    double totalCalories = _meals.fold(0, (sum, meal) => sum + meal.calories);
+    double totalCarbs = _meals.fold(0, (sum, meal) => sum + meal.carbs);
+    double totalProtein = _meals.fold(0, (sum, meal) => sum + meal.protein);
+    double totalFat = _meals.fold(0, (sum, meal) => sum + meal.fat);
+
+    const double dailyCalorieGoal = 2000;
+    const double dailyCarbsGoal = 250;
+    const double dailyProteinGoal = 150;
+    const double dailyFatGoal = 65;
+
+    return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const Text(
-            '1,200 / 2,000',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-          ),
-          const Text(
-            'calories remaining',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: 0.6,
-            backgroundColor: Colors.grey[200],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: _buildGlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              _buildNutrientProgress('Carbs', 0.7),
-              _buildNutrientProgress('Protein', 0.5),
-              _buildNutrientProgress('Fat', 0.3),
+              Text(
+                '${totalCalories.toStringAsFixed(0)} / ${dailyCalorieGoal.toStringAsFixed(0)}',
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'calories remaining',
+                style: GoogleFonts.karla(
+                  color: Colors.white60,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: totalCalories / dailyCalorieGoal,
+                backgroundColor: Colors.white10,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNutrientProgress(
+                    'Carbs',
+                    totalCarbs / dailyCarbsGoal,
+                    '${totalCarbs.toStringAsFixed(0)}g',
+                  ),
+                  _buildNutrientProgress(
+                    'Protein',
+                    totalProtein / dailyProteinGoal,
+                    '${totalProtein.toStringAsFixed(0)}g',
+                  ),
+                  _buildNutrientProgress(
+                    'Fat',
+                    totalFat / dailyFatGoal,
+                    '${totalFat.toStringAsFixed(0)}g',
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildNutrientProgress(String label, double progress) {
+  Widget _buildNutrientProgress(String label, double progress, String value) {
     return Column(
       children: [
-        Text(label),
+        Text(
+          label,
+          style: GoogleFonts.karla(color: Colors.white60),
+        ),
         const SizedBox(height: 8),
-        CircularProgressIndicator(
-          value: progress,
-          backgroundColor: Colors.grey[200],
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            CircularProgressIndicator(
+              value: progress.clamp(0, 1),
+              backgroundColor: Colors.white10,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.karla(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -71,13 +301,49 @@ class CalorieTrackerPage extends StatelessWidget {
 
   Widget _buildMealsList() {
     return ListView.builder(
-      itemCount: 4,
+      padding: const EdgeInsets.all(16),
+      itemCount: _meals.length,
       itemBuilder: (context, index) {
-        return ListTile(
-          leading: const Icon(Icons.restaurant),
-          title: Text('Meal ${index + 1}'),
-          subtitle: const Text('Calories: 500'),
-          trailing: const Icon(Icons.chevron_right),
+        final meal = _meals[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _buildGlassCard(
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: meal.imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        meal.imageUrl,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.fastfood, color: Colors.white60),
+                      ),
+                    )
+                  : const Icon(Icons.fastfood, color: Colors.white60),
+              title: Text(
+                meal.name,
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                '${meal.calories.toStringAsFixed(0)} kcal - ${meal.protein.toStringAsFixed(1)}g protein - ${meal.carbs.toStringAsFixed(1)}g carbs - ${meal.fat.toStringAsFixed(1)}g fat',
+                style: GoogleFonts.karla(color: Colors.white60),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    _meals.removeAt(index);
+                  });
+                },
+              ),
+            ),
+          ),
         );
       },
     );

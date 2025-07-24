@@ -7,7 +7,7 @@ import 'screens/workouts/workout_categories_page.dart';
 import 'screens/workouts/workout_detail_page.dart';
 import 'screens/nutrition/meal_plans_page.dart';
 import 'screens/nutrition/calorie_tracker_page.dart';
-import 'screens/trainers/trainers_list_page.dart';
+import 'screens/trainers/trainers_page.dart';
 import 'screens/profile/profile_page.dart';
 import 'screens/dashboard/progress_page.dart';
 import 'screens/settings/settings_page.dart';
@@ -318,7 +318,7 @@ class HomeContent extends StatelessWidget {
       {
         'icon': Icons.people,
         'name': 'Trainers',
-        'page': const TrainersListPage(),
+        'page': const TrainersPage(),
       },
       {
         'icon': Icons.show_chart,
