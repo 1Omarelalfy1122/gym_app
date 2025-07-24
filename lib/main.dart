@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gym_app/home_page.dart';
+import 'package:gym_app/screens/auth/login_page.dart';
+import 'package:gym_app/screens/auth/signup_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +13,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: HomePage());
+    return MaterialApp(debugShowCheckedModeBanner: false, home: LoginPage());
   }
 }
