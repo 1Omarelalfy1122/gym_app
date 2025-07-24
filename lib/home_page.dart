@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-
+import 'package:google_fonts/google_fonts.dart';
+import 'utils/page_transition.dart';
 // Import all screens
 import 'screens/workouts/workout_categories_page.dart';
 import 'screens/workouts/workout_detail_page.dart';
@@ -93,7 +94,24 @@ class _HomePageState extends State<HomePage> {
           _buildBackgroundEffects(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            child: _pages[_selectedIndex],
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.2, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(_selectedIndex),
+              child: _pages[_selectedIndex],
+            ),
           ),
         ],
       ),
@@ -123,6 +141,10 @@ class _HomePageState extends State<HomePage> {
               unselectedItemColor: Colors.white60,
               currentIndex: _selectedIndex,
               onTap: _onItemTapped,
+              selectedLabelStyle: GoogleFonts.karla(
+                fontWeight: FontWeight.bold,
+              ),
+              unselectedLabelStyle: GoogleFonts.karla(),
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
                 BottomNavigationBarItem(
@@ -179,15 +201,19 @@ class HomeContent extends StatelessWidget {
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'Welcome back,',
-              style: TextStyle(color: Colors.white60, fontSize: 16),
+              style: GoogleFonts.karla(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Text(
               'John Doe',
-              style: TextStyle(
+              style: GoogleFonts.karla(
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -199,7 +225,7 @@ class HomeContent extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
+              CustomPageRoute(child: const SettingsPage()),
             );
           },
           child: _buildGlassContainer(
@@ -220,7 +246,7 @@ class HomeContent extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const WorkoutDetailPage()),
+          CustomPageRoute(child: const WorkoutDetailPage()),
         );
       },
       child: _buildGlassContainer(
@@ -232,9 +258,9 @@ class HomeContent extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Featured Workout',
-                    style: TextStyle(
+                    style: GoogleFonts.karla(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -249,17 +275,20 @@ class HomeContent extends StatelessWidget {
                       color: Colors.purple.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: const Text(
+                    child: Text(
                       '45 min',
-                      style: TextStyle(color: Colors.white),
+                      style: GoogleFonts.karla(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 15),
-              const Text(
+              Text(
                 'Full Body Workout',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                style: GoogleFonts.karla(color: Colors.white),
               ),
               const SizedBox(height: 15),
               LinearProgressIndicator(
@@ -332,7 +361,7 @@ class HomeContent extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     categories[index]['name'] as String,
-                    style: const TextStyle(
+                    style: GoogleFonts.karla(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -361,9 +390,9 @@ class HomeContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Today\'s Activity',
-                style: TextStyle(
+                style: GoogleFonts.karla(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -396,7 +425,7 @@ class HomeContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: GoogleFonts.karla(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -404,7 +433,7 @@ class HomeContent extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 14),
+          style: GoogleFonts.karla(color: Colors.white60, fontSize: 14),
         ),
       ],
     );
