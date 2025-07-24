@@ -8,7 +8,7 @@ import 'screens/workouts/workout_detail_page.dart';
 import 'screens/nutrition/meal_plans_page.dart';
 import 'screens/nutrition/calorie_tracker_page.dart';
 import 'screens/trainers/trainers_list_page.dart';
-import 'screens/community/community_home_page.dart';
+import 'screens/profile/profile_page.dart';
 import 'screens/dashboard/progress_page.dart';
 import 'screens/settings/settings_page.dart';
 
@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
     const HomeContent(),
     const WorkoutCategoriesPage(),
     const MealPlansPage(),
-    const CommunityHomePage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -156,8 +156,8 @@ class _HomePageState extends State<HomePage> {
                   label: 'Nutrition',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.people),
-                  label: 'Community',
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
                 ),
               ],
             ),
