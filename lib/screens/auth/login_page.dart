@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,6 +16,8 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   Widget _buildGlassContainer({required Widget child}) {
     return ClipRRect(
@@ -74,11 +78,14 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildLoginButton() {
     return ElevatedButton(
-      onPressed: () {
-        if (_formKey.currentState!.validate()) {
-          // Handle login
-        }
-      },
+      onPressed:
+          _isLoading
+              ? null
+              : () {
+                if (_formKey.currentState!.validate()) {
+                  // Handle email/password login here
+                }
+              },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
@@ -95,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildSocialButton({
     required String label,
     required IconData icon,
-    required VoidCallback onPressed,
+    required Future<void> Function()? onPressed,
   }) {
     return _buildGlassContainer(
       child: InkWell(
@@ -262,7 +269,47 @@ class _LoginPageState extends State<LoginPage> {
                             child: _buildSocialButton(
                               label: 'Google',
                               icon: Icons.g_mobiledata,
-                              onPressed: () {},
+                              onPressed:
+                                  _isLoading
+                                      ? null
+                                      : () async {
+                                        setState(() {
+                                          _isLoading = true;
+                                        });
+                                        try {
+                                          final userCredential =
+                                              await _authService
+                                                  .signInWithGoogle();
+                                          if (userCredential != null &&
+                                              mounted) {
+                                            // Navigate to home page or handle successful login
+                                            Navigator.pushReplacementNamed(
+                                              context,
+                                              '/home',
+                                            );
+                                          }
+                                        } catch (e) {
+                                          // Show error message
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error signing in with Google: $e',
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() {
+                                              _isLoading = false;
+                                            });
+                                          }
+                                        }
+                                      },
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -270,7 +317,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: _buildSocialButton(
                               label: 'Facebook',
                               icon: Icons.facebook,
-                              onPressed: () {},
+                              onPressed: () async {},
                             ),
                           ),
                         ],
