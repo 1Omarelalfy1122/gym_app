@@ -28,9 +28,11 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  firebase_auth: ^5.7.0
   flutter:
     sdk: flutter
   google_fonts: ^6.2.1
+  google_sign_in: ^7.1.1
   http: ^1.4.0
   url_launcher: ^6.3.2
 
