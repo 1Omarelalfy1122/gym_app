@@ -262,10 +262,7 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(width: 15),
           Text(
             text,
-            style: GoogleFonts.karla(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: GoogleFonts.karla(color: Colors.white, fontSize: 16),
           ),
         ],
       ),

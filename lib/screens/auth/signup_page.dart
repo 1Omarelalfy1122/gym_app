@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gym_app/services/auth_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -53,10 +54,7 @@ class _SignupPageState extends State<SignupPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.karla(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.karla(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 8),
         _buildGlassContainer(
@@ -88,16 +86,11 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: Text(
         'Sign Up',
-        style: GoogleFonts.karla(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: GoogleFonts.karla(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -120,10 +113,7 @@ class _SignupPageState extends State<SignupPage> {
               const SizedBox(width: 12),
               Text(
                 label,
-                style: GoogleFonts.karla(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+                style: GoogleFonts.karla(color: Colors.white, fontSize: 16),
               ),
             ],
           ),
@@ -235,7 +225,9 @@ class _SignupPageState extends State<SignupPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Divider(color: Colors.white.withOpacity(0.3)),
+                            child: Divider(
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -248,7 +240,9 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                           ),
                           Expanded(
-                            child: Divider(color: Colors.white.withOpacity(0.3)),
+                            child: Divider(
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                           ),
                         ],
                       ),
@@ -259,7 +253,30 @@ class _SignupPageState extends State<SignupPage> {
                             child: _buildSocialButton(
                               label: 'Google',
                               icon: Icons.g_mobiledata,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  final authService = AuthService();
+                                  final userCredential =
+                                      await authService.signInWithGoogle();
+                                  if (userCredential != null && mounted) {
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/home',
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error signing in with Google: $e',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(width: 16),
