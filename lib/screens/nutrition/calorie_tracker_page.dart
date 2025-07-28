@@ -14,23 +14,42 @@ class CalorieTrackerPage extends StatefulWidget {
 class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
   final TextEditingController _searchController = TextEditingController();
   Food? _searchResult;
+  List<Food> _searchResults = [];
   bool _isLoading = false;
   List<Food> _meals = [];
+  String? _searchError;
+  int _customGrams = 100;
   
   Future<void> _searchFood() async {
     if (_searchController.text.isEmpty) return;
-    
     setState(() {
+      _customGrams = 100;
       _isLoading = true;
       _searchResult = null;
+      _searchResults = [];
+      _searchError = null;
     });
-    
-    final result = await FoodService.searchFood(_searchController.text);
-    
-    setState(() {
-      _searchResult = result;
-      _isLoading = false;
-    });
+    try {
+      final foods = await FoodService.searchFoods(_searchController.text); // new method
+      setState(() {
+        _searchResults = foods;
+        _isLoading = false;
+        if (foods.isEmpty) {
+          _searchError = 'No results found for "${_searchController.text}".';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _searchError = 'Error searching for food.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e', style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _addMeal() {
@@ -116,9 +135,22 @@ class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
                   ),
                 ),
                 _buildSearchBar(),
-                if (_searchResult != null) _buildSearchResult(),
-                _buildCalorieOverview(),
-                Expanded(child: _buildMealsList()),
+                if (_searchError != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _searchError!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+                    ),
+                  ),
+                if (_searchResult != null)
+                  _buildSearchResult()
+                else if (_searchResults.isNotEmpty)
+                  Expanded(child: _buildSearchResultsList()),
+                if (_searchResult == null)
+                  _buildCalorieOverview(),
+                if (_searchResult == null)
+                  Expanded(child: _buildMealsList()),
               ],
             ),
           ),
@@ -150,7 +182,10 @@ class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
                     icon: const Icon(Icons.clear, color: Colors.white60),
                     onPressed: () {
                       _searchController.clear();
-                      setState(() => _searchResult = null);
+                      setState(() {
+                        _searchResult = null;
+                        _searchError = null;
+                      });
                     },
                   ),
             border: InputBorder.none,
@@ -163,40 +198,110 @@ class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
   }
 
   Widget _buildSearchResult() {
+    // Per-100g values from API
+    final per100g = _searchResult!;
+    // Calculate for custom grams
+    double factor = _customGrams / 100.0;
+    double calories = per100g.calories * factor;
+    double protein = per100g.protein * factor;
+    double carbs = per100g.carbs * factor;
+    double fat = per100g.fat * factor;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: _buildGlassCard(
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
-          leading: _searchResult!.imageUrl.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    _searchResult!.imageUrl,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.fastfood, size: 40, color: Colors.white60),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: per100g.imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        per100g.imageUrl,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.fastfood, size: 40, color: Colors.white60),
+                      ),
+                    )
+                  : const Icon(Icons.fastfood, size: 40, color: Colors.white60),
+              title: Text(
+                per100g.name,
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Grams: ', style: TextStyle(color: Colors.white70)),
+                      SizedBox(
+                        width: 60,
+                        child: TextField(
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            border: OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white24),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.purple),
+                            ),
+                          ),
+                          controller: TextEditingController(text: _customGrams.toString()),
+                          onChanged: (val) {
+                            final g = int.tryParse(val);
+                            if (g != null && g > 0 && g <= 2000) {
+                              setState(() => _customGrams = g);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('g', style: TextStyle(color: Colors.white70)),
+                    ],
                   ),
-                )
-              : const Icon(Icons.fastfood, size: 40, color: Colors.white60),
-          title: Text(
-            _searchResult!.name,
-            style: GoogleFonts.karla(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  Text(
+                    '${calories.toStringAsFixed(0)} kcal per $_customGrams g',
+                    style: GoogleFonts.karla(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '${protein.toStringAsFixed(1)}g protein - ${carbs.toStringAsFixed(1)}g carbs - ${fat.toStringAsFixed(1)}g fat',
+                    style: GoogleFonts.karla(color: Colors.white60),
+                  ),
+                ],
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.add_circle, color: Colors.purple),
+                onPressed: () {
+                  // Add meal with custom grams
+                  final customMeal = Food(
+                    name: '${_customGrams}g ${per100g.name}',
+                    calories: calories,
+                    protein: protein,
+                    carbs: carbs,
+                    fat: fat,
+                    imageUrl: per100g.imageUrl,
+                  );
+                  setState(() {
+                    _meals.add(customMeal);
+                    _searchResult = null;
+                    _searchController.clear();
+                    _customGrams = 100;
+                  });
+                },
+              ),
             ),
-          ),
-          subtitle: Text(
-            '${_searchResult!.calories.toStringAsFixed(0)} kcal per 100g',
-            style: GoogleFonts.karla(color: Colors.white60),
-          ),
-          trailing: IconButton(
-            icon: const Icon(Icons.add_circle, color: Colors.purple),
-            onPressed: _addMeal,
-          ),
+          ],
         ),
       ),
     );
@@ -342,6 +447,38 @@ class _CalorieTrackerPageState extends State<CalorieTrackerPage> {
                   });
                 },
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchResultsList() {
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final food = _searchResults[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: _buildGlassCard(
+            child: ListTile(
+              leading: const Icon(Icons.fastfood, color: Colors.white60),
+              title: Text(
+                food.name,
+                style: GoogleFonts.karla(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                '${food.calories.toStringAsFixed(0)} kcal, ${food.protein.toStringAsFixed(1)}g protein, ${food.carbs.toStringAsFixed(1)}g carbs, ${food.fat.toStringAsFixed(1)}g fat (per 100g)',
+                style: GoogleFonts.karla(color: Colors.white60),
+              ),
+              onTap: () {
+                setState(() {
+                  _searchResult = food;
+                  _searchResults = [];
+                  _customGrams = 100;
+                });
+              },
             ),
           ),
         );

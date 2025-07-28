@@ -16,12 +16,20 @@ class Food {
   });
 
   factory Food.fromApi(Map<String, dynamic> data) {
+    double parseDouble(dynamic value) {
+      if (value is num) return value.toDouble();
+      if (value is String) {
+        final v = double.tryParse(value);
+        if (v != null) return v;
+      }
+      return 0.0;
+    }
     return Food(
       name: data['name'] ?? '',
-      calories: (data['calories'] ?? 0).toDouble(),
-      protein: (data['protein'] ?? 0).toDouble(),
-      carbs: (data['carbs'] ?? 0).toDouble(),
-      fat: (data['fat'] ?? 0).toDouble(),
+      calories: parseDouble(data['calories']),
+      protein: parseDouble(data['protein']),
+      carbs: parseDouble(data['carbs']),
+      fat: parseDouble(data['fat']),
       imageUrl: data['image'] ?? '',
     );
   }
